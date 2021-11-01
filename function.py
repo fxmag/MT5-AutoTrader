@@ -149,32 +149,39 @@ def modifyTP(open_position, close_price):
 
     for _, row in open_position.iterrows():
 
-        if row['type'] == 0:
-            request = {
-            "action": mt5.TRADE_ACTION_SLTP,
-            "symbol": row['symbol'],
-            "type": mt5.ORDER_TYPE_SELL,
-            "tp": close_price + float(os.environ['ADD_PIP']),
-            "position": row["ticket"]
-            }
-        
+        # if this position already loss money
+        if row['profit'] <= float(os.environ['ADD_PIP']) * -100000:
+
+            close_position(open_position)
+
         else:
-            request = {
-            "action": mt5.TRADE_ACTION_SLTP,
-            "symbol": row['symbol'],
-            "type": mt5.ORDER_TYPE_BUY,
-            "tp": close_price - float(os.environ['ADD_PIP']),
-            "position": row["ticket"]
-            }
-        
-        while code !=  mt5.TRADE_RETCODE_DONE:
+            
+            if row['type'] == 0:
+                request = {
+                "action": mt5.TRADE_ACTION_SLTP,
+                "symbol": row['symbol'],
+                "type": mt5.ORDER_TYPE_SELL,
+                "tp": close_price + float(os.environ['ADD_PIP']),
+                "position": row["ticket"]
+                }
+            
+            else:
+                request = {
+                "action": mt5.TRADE_ACTION_SLTP,
+                "symbol": row['symbol'],
+                "type": mt5.ORDER_TYPE_BUY,
+                "tp": close_price - float(os.environ['ADD_PIP']),
+                "position": row["ticket"]
+                }
+            
+            while code !=  mt5.TRADE_RETCODE_DONE:
 
-            code = mt5.order_send(request).retcode
+                code = mt5.order_send(request).retcode
 
-            if code ==  mt5.TRADE_RETCODE_DONE:
-                break
-        
-        create_log(f"Modify position {row['ticket']} : {request}")
+                if code ==  mt5.TRADE_RETCODE_DONE:
+                    break
+            
+            create_log(f"Modify position {row['ticket']} : {request}")
 
 def remove_order():
     """Remove pending orders"""
