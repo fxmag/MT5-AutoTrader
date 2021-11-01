@@ -5,7 +5,7 @@
 File name: function.py
 Author: WEI-TA KUAN
 Date created: 9/10/2021
-Date last modified: 31/10/2021
+Date last modified: 1/11/2021
 Version: 3.1
 Python Version: 3.8.8
 Status: Developing
@@ -25,7 +25,7 @@ import os
 
 load_dotenv()
 
-def place_order(symbol, type, lot=1.0):
+def place_order(symbol, type, close_price, lot=1.0):
     """This function create buy and sell order in MT5 platform, the default lot is 1"""
     code = 0
 
@@ -36,7 +36,7 @@ def place_order(symbol, type, lot=1.0):
         "symbol": symbol,
         "volume": lot,
         "type": mt5.ORDER_TYPE_BUY_LIMIT,
-        "price": mt5.symbol_info_tick(symbol).ask - os.environ['ADD_PIP']
+        "price": close_price - float(os.environ['ADD_PIP'])
         }
 
     elif type == "short":
@@ -45,17 +45,17 @@ def place_order(symbol, type, lot=1.0):
         "symbol": symbol,
         "volume": lot,
         "type": mt5.ORDER_TYPE_SELL_LIMIT,
-        "price": mt5.symbol_info_tick(symbol).bid + os.environ['ADD_PIP']
+        "price": close_price + float(os.environ['ADD_PIP'])
         }
     
-    while code != 10009:
+    while code !=  mt5.TRADE_RETCODE_DONE:
 
         code = mt5.order_send(request).retcode
 
-        if code == 10009:
+        if code ==  mt5.TRADE_RETCODE_DONE:
             break
     
-    create_log(f"Open {type} pending position")
+    create_log(f"Open {type} pending position {request}")
 
 def close_position(open_position):
     """This function is for closing all the existing position 
@@ -123,6 +123,10 @@ def avoid_SWAP(data, open_position):
         
         else:
             time.sleep(3605 - datetime.now().minute * 60 - datetime.now().second)
+        
+        return True
+    
+    return False
 
 
 def create_log(msg):
@@ -137,6 +141,62 @@ def create_log(msg):
     
     logging.info(msg)
 
+
+def modifyTP(open_position, close_price):
+    """Modify position take profit price"""
+    
+    code = 0
+
+    for _, row in open_position.iterrows():
+
+        if row['type'] == 0:
+            request = {
+            "action": mt5.TRADE_ACTION_SLTP,
+            "symbol": row['symbol'],
+            "type": mt5.ORDER_TYPE_SELL,
+            "tp": close_price + float(os.environ['ADD_PIP']),
+            "position": row["ticket"]
+            }
+        
+        else:
+            request = {
+            "action": mt5.TRADE_ACTION_SLTP,
+            "symbol": row['symbol'],
+            "type": mt5.ORDER_TYPE_BUY,
+            "tp": close_price - float(os.environ['ADD_PIP']),
+            "position": row["ticket"]
+            }
+        
+        while code !=  mt5.TRADE_RETCODE_DONE:
+
+            code = mt5.order_send(request).retcode
+
+            if code ==  mt5.TRADE_RETCODE_DONE:
+                break
+        
+        create_log(f"Modify position {row['ticket']} : {request}")
+
+def remove_order():
+    """Remove pending orders"""
+
+    code = 0
+
+    request = {
+    "action": mt5.TRADE_ACTION_REMOVE,
+    "order": mt5.orders_get()[0][0]
+    }
+
+    while code !=  mt5.TRADE_RETCODE_DONE:
+
+        code = mt5.order_send(request).retcode
+
+        if code ==  mt5.TRADE_RETCODE_DONE:
+            break
+    
+    create_log(f"Removed Pending Order: {request}")
+
 def yourstrategy(symbol='EURUSD', timeframe=mt5.TIMEFRAME_H1):
     pass
+
+
 
