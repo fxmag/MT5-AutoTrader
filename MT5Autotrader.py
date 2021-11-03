@@ -5,7 +5,7 @@
 File name: MT5Autotrader.py
 Author: WEI-TA KUAN
 Date created: 9/10/2021
-Date last modified: 31/10/2021
+Date last modified: 3/11/2021
 Version: 3.1
 Python Version: 3.8.8
 Status: Developing
@@ -31,6 +31,8 @@ while True:
     except Exception as e:
 
         create_log(e, debug=True)
+
+        lineNotifyMessage(os.environ['LINE_TOKEN'], e)
 
 
 

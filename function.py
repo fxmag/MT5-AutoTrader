@@ -5,7 +5,7 @@
 File name: function.py
 Author: WEI-TA KUAN
 Date created: 9/10/2021
-Date last modified: 1/11/2021
+Date last modified: 3/11/2021
 Version: 3.1
 Python Version: 3.8.8
 Status: Developing
@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 import MetaTrader5 as mt5
 import pandas as pd
 import numpy as np
+import requests
 import time
 import pickle
 import joblib
@@ -205,6 +206,24 @@ def remove_order():
             break
     
     create_log(f"Removed Pending Order: {request}")
+
+
+def lineNotifyMessage(token, msg):
+    """This function use line notify for sending message"""
+
+    url = "https://notify-api.line.me/api/notify"
+    
+    headers = {
+        "Authorization": "Bearer " + token,
+        "Content-Type" : "application/x-www-form-urlencoded"
+    }
+
+    post = {'message': msg}
+
+    r = requests.post(url, headers=headers, params=post)
+    
+    return r.status_code
+
 
 def yourstrategy(symbol='EURUSD', timeframe=mt5.TIMEFRAME_H1):
     pass
