@@ -19,11 +19,18 @@ mt5.initialize()
 
 while True:
 
-    strategy()
+    try:
 
-    second = 3605 - datetime.now().minute * 60 - datetime.now().second
-    
-    time.sleep(second)
+        strategy()
+
+        second = 3605 - datetime.now().minute * 60 - datetime.now().second
+        
+        time.sleep(second)
+
+    # error handling
+    except Exception as e:
+
+        create_log(e, debug=True)
 
 
 
