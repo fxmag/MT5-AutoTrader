@@ -34,5 +34,7 @@ while True:
 
         lineNotifyMessage(os.environ['LINE_TOKEN'], e)
 
+        continue
+
 
 

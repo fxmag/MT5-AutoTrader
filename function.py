@@ -27,7 +27,7 @@ import os
 load_dotenv()
 
 def place_order(symbol, type, close_price, lot=1.0):
-    """This function create buy and sell order in MT5 platform, the default lot is 1"""
+    """This function create buy and sell order in MT5 platform, the default lot is 1"""   
     code = 0
 
     # Place buy order
@@ -55,6 +55,45 @@ def place_order(symbol, type, close_price, lot=1.0):
 
         if code ==  mt5.TRADE_RETCODE_DONE:
             break
+
+        else:
+            create_log(f"Unable to create pending position. Error code: {code}")
+    
+    create_log(f"Open {type} pending position {request}")
+
+
+def instance_open(symbol, type, lot=1.0):
+    """This function instance open lot"""
+    code = 0
+
+    # Place buy order
+    if type == "long":
+        request = {
+        "action": mt5.TRADE_ACTION_DEAL,
+        "symbol": symbol,
+        "volume": lot,
+        "type": mt5.ORDER_TYPE_BUY,
+        "price": mt5.symbol_info_tick(symbol).ask
+        }
+
+    elif type == "short":
+        request = {
+        "action": mt5.TRADE_ACTION_DEAL,
+        "symbol": symbol,
+        "volume": lot,
+        "type": mt5.ORDER_TYPE_SELL,
+        "price": mt5.symbol_info_tick(symbol).bid
+        }
+    
+    while code !=  mt5.TRADE_RETCODE_DONE:
+
+        code = mt5.order_send(request).retcode
+
+        if code ==  mt5.TRADE_RETCODE_DONE:
+            break
+
+        else:
+            create_log(f"Unable to create pending position. Error code: {code}")
     
     create_log(f"Open {type} pending position {request}")
 
@@ -156,7 +195,11 @@ def create_log(msg, debug=False):
 
 def modifyTP(open_position, close_price):
     """Modify position take profit price"""
-    
+
+    # if still have pending order, remove it
+    if len(mt5.orders_get()) != 0:
+        remove_order()
+
     code = 0
 
     for _, row in open_position.iterrows():
@@ -166,7 +209,7 @@ def modifyTP(open_position, close_price):
             "action": mt5.TRADE_ACTION_SLTP,
             "symbol": row['symbol'],
             "type": mt5.ORDER_TYPE_SELL,
-            "tp": close_price + float(os.environ['ADD_PIP']),
+            "tp": close_price + float(os.environ['CLOSED_PIP']),
             "position": row["ticket"]
             }
         
@@ -175,7 +218,7 @@ def modifyTP(open_position, close_price):
             "action": mt5.TRADE_ACTION_SLTP,
             "symbol": row['symbol'],
             "type": mt5.ORDER_TYPE_BUY,
-            "tp": close_price - float(os.environ['ADD_PIP']),
+            "tp": close_price - float(os.environ['CLOSED_PIP']),
             "position": row["ticket"]
             }
         
@@ -184,8 +227,24 @@ def modifyTP(open_position, close_price):
             code = mt5.order_send(request).retcode
 
             if code ==  mt5.TRADE_RETCODE_DONE:
+                break 
+
+            # invade request means the price is lower or higher the current price
+            elif code == mt5.TRADE_RETCODE_INVALID:
+                if row['type'] == 0:
+                    instance_open(row['symbol'], 'short')
+                else:
+                    instance_open(row['symbol'], 'long')
+
+                close_position(open_position)
+
+                create_log(f"Executed Instance Open")
+
                 break
-        
+
+            else:
+                create_log(f'Unable to modify position Error code: {code}', debug=True)
+
         create_log(f"Modify position {row['ticket']} : {request}")
 
 def remove_order():
@@ -204,6 +263,8 @@ def remove_order():
 
         if code ==  mt5.TRADE_RETCODE_DONE:
             break
+        else:
+            create_log(f'Unable to remove order Error code: {code}', debug=True)
     
     create_log(f"Removed Pending Order: {request}")
 
@@ -227,6 +288,5 @@ def lineNotifyMessage(token, msg):
 
 def yourstrategy(symbol='EURUSD', timeframe=mt5.TIMEFRAME_H1):
     pass
-
 
 
