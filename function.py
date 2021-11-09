@@ -54,21 +54,27 @@ def place_order(symbol, type, close_price, lot=1.0):
         code = mt5.order_send(request).retcode
 
         if code ==  mt5.TRADE_RETCODE_DONE:
+
+            # create pending order successfully
+            create_log(f"Open {type} pending position {request}")
+            
             break
 
         # if the open price is invalid, open lot immediately
         elif code == mt5.TRADE_RETCODE_INVALID_PRICE:
 
-            code = instance_open(symbol, type)
+            create_log("INVALID_PRICE, USE INSTANT OPEN")
+
+            instant_open(symbol, type)
+
+            break
 
         else:
             create_log(f"Unable to create pending position. Error code: {code}")
-    
-    create_log(f"Open {type} pending position {request}")
 
 
-def instance_open(symbol, type, lot=1.0):
-    """This function instance open lot"""
+def instant_open(symbol, type, lot=1.0):
+    """This function instant open lot"""
     code = 0
 
     # Place buy order
@@ -102,7 +108,6 @@ def instance_open(symbol, type, lot=1.0):
     
     create_log(f"Open {type} pending position {request}")
 
-    return code
 
 def close_position(open_position):
     """This function is for closing all the existing position 
@@ -185,7 +190,7 @@ def create_log(msg, debug=False):
         filename="trading_log.log",
         level=logging.DEBUG,
         filemode="a",
-        format="%(asctime)s: %(levelname)s : %(message)s",
+        format="%(asctime)s: %(levelname)s : %(funcName)s : %(message)s",
         datefmt="%m/%d/%Y %I:%M:%S %p ",
     )
     else:
@@ -193,7 +198,7 @@ def create_log(msg, debug=False):
             filename="trading_log.log",
             level=logging.INFO,
             filemode="a",
-            format="%(asctime)s: %(levelname)s : %(message)s",
+            format="%(asctime)s: %(levelname)s : %(funcName)s : %(message)s",
             datefmt="%m/%d/%Y %I:%M:%S %p ",
         )
     
@@ -234,10 +239,15 @@ def modifyTP(open_position, close_price):
             code = mt5.order_send(request).retcode
 
             if code ==  mt5.TRADE_RETCODE_DONE:
+                
+                create_log(f"Modify position {row['ticket']} : {request}")
+
                 break 
 
             # invade request means the price is lower or higher the current price
             elif code == mt5.TRADE_RETCODE_INVALID_STOPS:
+
+                create_log("INVALID STOP, CLOSE POSITION IMMIDIATELY")
 
                 close_position(open_position)
                 
@@ -246,7 +256,6 @@ def modifyTP(open_position, close_price):
             else:
                 create_log(f'Unable to modify position Error code: {code}', debug=True)
 
-        create_log(f"Modify position {row['ticket']} : {request}")
 
 def remove_order():
     """Remove pending orders"""
