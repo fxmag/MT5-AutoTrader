@@ -56,6 +56,11 @@ def place_order(symbol, type, close_price, lot=1.0):
         if code ==  mt5.TRADE_RETCODE_DONE:
             break
 
+        # if the open price is invalid, open lot immediately
+        elif code == mt5.TRADE_RETCODE_INVALID_PRICE:
+
+            code = instance_open(symbol, type)
+
         else:
             create_log(f"Unable to create pending position. Error code: {code}")
     
@@ -96,6 +101,8 @@ def instance_open(symbol, type, lot=1.0):
             create_log(f"Unable to create pending position. Error code: {code}")
     
     create_log(f"Open {type} pending position {request}")
+
+    return code
 
 def close_position(open_position):
     """This function is for closing all the existing position 
@@ -230,16 +237,10 @@ def modifyTP(open_position, close_price):
                 break 
 
             # invade request means the price is lower or higher the current price
-            elif code == mt5.TRADE_RETCODE_INVALID:
-                if row['type'] == 0:
-                    instance_open(row['symbol'], 'short')
-                else:
-                    instance_open(row['symbol'], 'long')
+            elif code == mt5.TRADE_RETCODE_INVALID_STOPS:
 
                 close_position(open_position)
-
-                create_log(f"Executed Instance Open")
-
+                
                 break
 
             else:
@@ -288,5 +289,4 @@ def lineNotifyMessage(token, msg):
 
 def yourstrategy(symbol='EURUSD', timeframe=mt5.TIMEFRAME_H1):
     pass
-
 
