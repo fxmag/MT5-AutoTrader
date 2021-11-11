@@ -17,6 +17,13 @@ from strategy import *
 
 mt5.initialize()
 
+# check everything up to date
+time.sleep(30)
+
+create_log("System Activated, Start Making Profit")
+
+notify = True
+
 while True:
 
     try:
@@ -32,7 +39,11 @@ while True:
 
         create_log(e, debug=True)
 
-        lineNotifyMessage(os.environ['LINE_TOKEN'], e)
+        if notify:
+
+            lineNotifyMessage(os.environ['LINE_TOKEN'], e)
+
+            notify = False
 
         continue
 
