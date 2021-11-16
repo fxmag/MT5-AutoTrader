@@ -26,182 +26,145 @@ import os
 
 load_dotenv()
 
-def place_order(symbol, type, close_price, lot=1.0):
-    """This function create buy and sell order in MT5 platform, the default lot is 1"""   
-    code = 0
+#================= Historical Data ==================
 
-    # Place buy order
-    if type == "long":
-        request = {
-        "action": mt5.TRADE_ACTION_PENDING,
-        "symbol": symbol,
-        "volume": lot,
-        "type": mt5.ORDER_TYPE_BUY_LIMIT,
-        "price": close_price - float(os.environ['ADD_PIP'])
-        }
+def HistoricalData(symbol="EURUSD", period=mt5.TIMEFRAME_H1, ticks=70):
+    """This method return the historical dataframe of a forex pair, the default symbol is AUDUSD"""
 
-    elif type == "short":
-        request = {
-        "action": mt5.TRADE_ACTION_PENDING,
-        "symbol": symbol,
-        "volume": lot,
-        "type": mt5.ORDER_TYPE_SELL_LIMIT,
-        "price": close_price + float(os.environ['ADD_PIP'])
-        }
+    data = pd.DataFrame(mt5.copy_rates_from_pos(symbol, period, 0, ticks))
+
+    data['time'] = pd.to_datetime(data['time'], unit='s')
+    data['hour'] = [i.hour for i in data.time.tolist()]
+    data['MovingAverage'] = data.iloc[:, 4].rolling(window=int(os.environ["MOVAVG"])).mean()
+    data['RollingVol'] = data.iloc[:, 5].rolling(window=int(os.environ['ROLLVOL'])).mean()
     
-    while code !=  mt5.TRADE_RETCODE_DONE:
+    # calculate the changing rate
+    for index, row in data.iterrows():
+        try:
+            data.at[index, 'change'] = row['MovingAverage']/data.at[index -1, 'MovingAverage']
+            data.at[index, 'vol_change'] = row['RollingVol']/data.at[index -1, 'RollingVol']
+        except:
+            pass
 
-        code = mt5.order_send(request).retcode
+    return data
 
-        if code ==  mt5.TRADE_RETCODE_DONE:
-
-            # create pending order successfully
-            create_log(f"Open {type} pending position {request}")
+# ========== Order Helper Function =================
+def OrderChecker(request):
+    """This function check the order had sent correctly or not"""
+    success = None
+    
+    while success != mt5.TRADE_RETCODE_DONE:
+        
+        success = mt5.order_send(request).retcode
+        
+        if success == mt5.TRADE_RETCODE_DONE:
             
             break
 
-        # if the open price is invalid, open lot immediately
-        elif code == mt5.TRADE_RETCODE_INVALID_PRICE:
+    return True
 
-            create_log("INVALID_PRICE, USE INSTANT OPEN")
+def PlaceOrder(types, symbol='EURUSD', lot=1.0):
+    """This function help placing order in MT5"""
 
-            instant_open(symbol, type)
-
-            break
-
-        else:
-            create_log(f"Unable to create pending position. Error code: {code}")
-
-
-def instant_open(symbol, type, comment=None, lot=1.0):
-    """This function instant open lot"""
-    code = 0
-
-    # Place buy order
-    if type == "long":
+    if types == 'long':
         request = {
         "action": mt5.TRADE_ACTION_DEAL,
         "symbol": symbol,
         "volume": lot,
         "type": mt5.ORDER_TYPE_BUY,
-        "price": mt5.symbol_info_tick(symbol).ask
+        "price": mt5.symbol_info_tick(symbol).ask,
+        'magic':int(os.environ['BOT'])
         }
-
-    elif type == "short" and comment is None:
-        request = {
-        "action": mt5.TRADE_ACTION_DEAL,
-        "symbol": symbol,
-        "volume": lot,
-        "type": mt5.ORDER_TYPE_SELL,
-        "price": mt5.symbol_info_tick(symbol).bid
-        }
-
-    elif type == 'short' and comment is not None:
+    else:
         request = {
         "action": mt5.TRADE_ACTION_DEAL,
         "symbol": symbol,
         "volume": lot,
         "type": mt5.ORDER_TYPE_SELL,
         "price": mt5.symbol_info_tick(symbol).bid,
-        'comment':comment
-        } 
-    print(request)
+        'magic':int(os.environ['BOT'])
+        }
     
-    while code !=  mt5.TRADE_RETCODE_DONE:
-
-        code = mt5.order_send(request).retcode
-
-        if code ==  mt5.TRADE_RETCODE_DONE:
-            break
-
-        else:
-            create_log(f"Unable to create pending position. Error code: {code}")
-    
-    create_log(f"Open {type} pending position {request}")
-
-
-def close_position(open_position):
+    if OrderChecker(request):
+        
+        create_log(f'Order Placed Successful - {types}')
+        
+def ClosePosition(opened):
     """This function is for closing all the existing position 
     by sending signal to place_order function"""
 
-    for _, row in open_position.iterrows():
-        # MT5 Order Type == 1 is short order Type == 0 is long Order
-        if row['type'] == 0:
-            order_price = mt5.symbol_info_tick(row['symbol']).bid
-            request = {
-            "action": mt5.TRADE_ACTION_DEAL,
-            "symbol": row['symbol'],
-            "volume": row["volume"],
-            "type": mt5.ORDER_TYPE_SELL,
-            "price": order_price,
-            "position": row["ticket"]
-            }
-        
-        else:
-            order_price = mt5.symbol_info_tick(row['symbol']).ask
-            request = {
-            "action": mt5.TRADE_ACTION_DEAL,
-            "symbol": row['symbol'],
-            "volume": row["volume"],
-            "type": mt5.ORDER_TYPE_BUY,
-            "price": order_price,
-            "position": row["ticket"]
-            }
+    if opened['type'] == 0:
+        request = {
+        "action": mt5.TRADE_ACTION_DEAL,
+        "symbol": opened['symbol'],
+        "volume": opened["volume"],
+        "type": mt5.ORDER_TYPE_SELL,
+        "price":  mt5.symbol_info_tick(opened['symbol']).bid,
+        "position": opened["ticket"]
+        }
+    else:
+        request = {
+        "action": mt5.TRADE_ACTION_DEAL,
+        "symbol": opened['symbol'],
+        "volume": opened["volume"],
+        "type": mt5.ORDER_TYPE_BUY,
+        "price": mt5.symbol_info_tick(opened['symbol']).ask,
+        "position": opened["ticket"]
+        }
+    if OrderChecker(request):
+        create_log(f'Order Closed Successful - {opened["ticket"]}')
 
 
-        mt5.order_send(request)
-        
-        create_log(f"Close position {row['ticket']} at {order_price}")
+# ========== SWAP =================
 
+def AvoidSwap():
+    """Avoid SWAP Fee Expensed and don't trade at this time"""
+    
+    # Get existed position
+    opened = mt5.positions_get()
 
-def history_data(symbol="EURUSD", period=mt5.TIMEFRAME_M5, ticks=70):
-    """This method return the historical dataframe of a forex pair, the default symbol is EURUSD"""
+    # If there is existing position, check the condition for SWAP avoiding
+    if len(opened) != 0:
 
-    data = pd.DataFrame(mt5.copy_rates_from_pos(symbol, period, 0, ticks))
+        opened = opened[0]._asdict()
 
-    data['time'] = pd.to_datetime(data['time'], unit='s')
-    data['hours'] = [i.hour for i in data.time]
-    data['day'] = [i.day for i in data.time]
-    data['weekday'] = [i.weekday() for i in data.time]
+        # keeping pending trade
+        pending_trade = opened['type'] 
 
+        # only avoid swap for long position, check contract size
+        if pending_trade == 0:                
 
-    return data
+            # close long position
+            ClosePosition(opened)
+            
+            # create log record
+            create_log("SWAP Fee Avoid Success")
 
-def avoid_SWAP(data, open_position):
-    """Avoid SWAP Expensed and don't trade at this time"""
-    if (data.time[1].weekday() in [1, 2]) & (data.time[1].hour == 23):
+            # wait till next day continue the remaining trading
+            time.sleep(3605 - datetime.now().minute * 60 - datetime.now().second)
 
-        if open_position is not None:
+            PlaceOrder("long")
 
-            pending_trade = open_position['type'][0]
+            # update the existing position
+            opened = mt5.positions_get()[0]._asdict()
 
-            # only avoid swap for long position
-            if pending_trade != 1:                
-
-                close_position(open_position)
-                create_log("Avoiding SWAP fee, Close position")
-
-                # wait till next day continue trading
-                time.sleep(3605 - datetime.now().minute * 60 - datetime.now().second)
-
-                data = history_data(symbol="EURUSD", ticks=2, period=mt5.TIMEFRAME_H1)
-
-                if pending_trade == 0:
-                    place_order('EURUSD', "long", data.close[0])
-                
-                else:
-                    place_order('EURUSD', "short", data.close[0])
-        
         else:
             time.sleep(3605 - datetime.now().minute * 60 - datetime.now().second)
-        
-        return True
     
-    return False
+    else:
+        # set opened to None
+        opened = None
 
-
+        time.sleep(3605 - datetime.now().minute * 60 - datetime.now().second)
+    
+    return HistoricalData(ticks=12).iloc[-2:,:].reset_index(), opened
+        
+ 
+# =========== Trading Information ==============
 def create_log(msg, debug=False):
-    """This function create the basic log file to check the system is working normally"""
+    """This function create the basic log file to check 
+        the system is working normally"""
+
     if debug:
         logging.basicConfig(
         filename="trading_log.log",
@@ -222,113 +185,17 @@ def create_log(msg, debug=False):
     logging.info(msg)
 
 
-def modifyTP(open_position, close_price):
-    """Modify position take profit price"""
+# =========== Stop Loss ==============
+def StopLoss(opened):
+    """This function check the stop loss condition had met or not"""
+    reference = HistoricalData(ticks=9)
 
-    # if still have pending order, remove it
-    if len(mt5.orders_get()) != 0:
-        remove_order()
-
-    code = 0
-
-    for _, row in open_position.iterrows():
-
-        if row['comment'] == '*':
-            close_position(open_position)
-        else:
-            if row['type'] == 0:
-                request = {
-                "action": mt5.TRADE_ACTION_SLTP,
-                "symbol": row['symbol'],
-                "type": mt5.ORDER_TYPE_SELL,
-                "tp": close_price + float(os.environ['CLOSED_PIP']),
-                "position": row["ticket"]
-                }
-            
-            else:
-                request = {
-                "action": mt5.TRADE_ACTION_SLTP,
-                "symbol": row['symbol'],
-                "type": mt5.ORDER_TYPE_BUY,
-                "tp": close_price - float(os.environ['CLOSED_PIP']),
-                "position": row["ticket"]
-                }
-            
-            while code !=  mt5.TRADE_RETCODE_DONE:
-
-                code = mt5.order_send(request).retcode
-
-                if code ==  mt5.TRADE_RETCODE_DONE:
-                    
-                    create_log(f"Modify position {row['ticket']} : {request}")
-
-                    break 
-
-                # invade request means the price is lower or higher the current price
-                elif code == mt5.TRADE_RETCODE_INVALID_STOPS:
-
-                    create_log("INVALID STOP, CLOSE POSITION IMMIDIATELY")
-
-                    close_position(open_position)
-                    
-                    break
-
-                else:
-                    create_log(f'Unable to modify position Error code: {code}', debug=True)
-
-
-def remove_order():
-    """Remove pending orders"""
-
-    code = 0
-
-    request = {
-    "action": mt5.TRADE_ACTION_REMOVE,
-    "order": mt5.orders_get()[0][0]
-    }
-
-    while code !=  mt5.TRADE_RETCODE_DONE:
-
-        code = mt5.order_send(request).retcode
-
-        if code ==  mt5.TRADE_RETCODE_DONE:
-            break
-        else:
-            create_log(f'Unable to remove order Error code: {code}', debug=True)
+    # Condition met, close position and open another position
+    if reference.iloc[-2].change < float(os.environ['SL_THRESHOLD']) and opened['profit'] < 0:
+        
+        ClosePosition(opened)
+        
+        PlaceOrder('short')
     
-    create_log(f"Removed Pending Order: {request}")
-
-
-def lineNotifyMessage(token, msg):
-    """This function use line notify for sending message"""
-
-    url = "https://notify-api.line.me/api/notify"
-    
-    headers = {
-        "Authorization": "Bearer " + token,
-        "Content-Type" : "application/x-www-form-urlencoded"
-    }
-
-    post = {'message': msg}
-
-    r = requests.post(url, headers=headers, params=post)
-    
-    return r.status_code
-
-def ma_change(windows, period=mt5.TIMEFRAME_H1):
-    """This function calculate the change of simple moving average"""
-
-    data = history_data(period=period, ticks=windows * 2)
-    data['SMA'] = data.iloc[:, 4].rolling(window=windows).mean()
-    for index, row in data.iterrows():
-        try:
-            data.at[index, 'change'] = row['SMA'] / data.at[index - 1, 'SMA']
-        except:
-            pass
-    
-    return data.iloc[-2, :]['change']
-
-
-def yourstrategy(symbol='EURUSD', timeframe=mt5.TIMEFRAME_H1):
-    pass
-
+    # update existed position
+    return mt5.positions_get()[0]._asdict()

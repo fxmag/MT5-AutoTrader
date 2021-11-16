@@ -5,7 +5,7 @@
 File name: MT5Autotrader.py
 Author: WEI-TA KUAN
 Date created: 9/10/2021
-Date last modified: 3/11/2021
+Date last modified: 16/11/2021
 Version: 3.1
 Python Version: 3.8.8
 Status: Developing
@@ -13,7 +13,6 @@ Status: Developing
 #--------------------------------#
 
 from strategy import *
-
 
 mt5.initialize()
 
@@ -38,12 +37,6 @@ while True:
     except Exception as e:
 
         create_log(e, debug=True)
-
-        if notify:
-
-            lineNotifyMessage(os.environ['LINE_TOKEN'], e)
-
-            notify = False
 
         continue
 
