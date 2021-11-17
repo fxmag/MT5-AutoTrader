@@ -5,7 +5,7 @@
 File name: function.py
 Author: WEI-TA KUAN
 Date created: 9/10/2021
-Date last modified: 12/11/2021
+Date last modified: 17/11/2021
 Version: 3.1
 Python Version: 3.8.8
 Status: Developing
@@ -45,6 +45,8 @@ def HistoricalData(symbol="EURUSD", period=mt5.TIMEFRAME_H1, ticks=70):
             data.at[index, 'vol_change'] = row['RollingVol']/data.at[index -1, 'RollingVol']
         except:
             pass
+    
+    data = stohastic_oscillator(data, int(os.environ['K']), int(os.environ['D']))
 
     return data
 
@@ -199,3 +201,12 @@ def StopLoss(opened):
     
     # update existed position
     return mt5.positions_get()[0]._asdict()
+
+
+# =========== Technical Indicator =============
+def stohastic_oscillator(data, k, d):
+    data['highest'] = data['high'].rolling(k).max()
+    data['lowest'] = data['low'].rolling(k).min()
+    data['K'] = (data['close'] - data['lowest']) * 100 / (data['highest'] - data['lowest'])
+    data['D'] = data['K'].rolling(d).mean()
+    return data
