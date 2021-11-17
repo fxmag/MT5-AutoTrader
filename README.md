@@ -12,6 +12,7 @@ Automatic Forex Trading with MetaTrader 5
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
+This Repo includes helper functions, such as open and close lot, receiving historical data and how to avoid SWAP, which help investors can do quantitative trading on MetaTrader 5 with first sight intuition.
 
 
 ### License
