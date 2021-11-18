@@ -5,8 +5,8 @@
 File name: function.py
 Author: WEI-TA KUAN
 Date created: 9/10/2021
-Date last modified: 17/11/2021
-Version: 3.1
+Date last modified: 18/11/2021
+Version: 4.0
 Python Version: 3.8.8
 Status: Developing
 """
@@ -65,7 +65,7 @@ def OrderChecker(request):
 
     return True
 
-def PlaceOrder(types, symbol='EURUSD', lot=1.0):
+def PlaceOrder(types, comment, symbol='EURUSD', lot=1.0):
     """This function help placing order in MT5"""
 
     if types == 'long':
@@ -75,7 +75,8 @@ def PlaceOrder(types, symbol='EURUSD', lot=1.0):
         "volume": lot,
         "type": mt5.ORDER_TYPE_BUY,
         "price": mt5.symbol_info_tick(symbol).ask,
-        'magic':int(os.environ['BOT'])
+        'magic':int(os.environ['BOT']),
+        'comment':comment
         }
     else:
         request = {
@@ -84,7 +85,8 @@ def PlaceOrder(types, symbol='EURUSD', lot=1.0):
         "volume": lot,
         "type": mt5.ORDER_TYPE_SELL,
         "price": mt5.symbol_info_tick(symbol).bid,
-        'magic':int(os.environ['BOT'])
+        'magic':int(os.environ['BOT']),
+        'comment':comment
         }
     
     if OrderChecker(request):
@@ -119,47 +121,24 @@ def ClosePosition(opened):
 
 # ========== SWAP =================
 
-def AvoidSwap():
+def AvoidSwap(opened):
     """Avoid SWAP Fee Expensed and don't trade at this time"""
-    
-    # Get existed position
-    opened = mt5.positions_get()
 
-    # If there is existing position, check the condition for SWAP avoiding
-    if len(opened) != 0:
+    # only avoid swap for long position, check contract size
+    if opened['type'] == 0:
 
-        opened = opened[0]._asdict()
+        # close long position
+        ClosePosition(opened)
 
-        # keeping pending trade
-        pending_trade = opened['type'] 
+        # create log record
+        create_log("SWAP Fee Avoid Success")
 
-        # only avoid swap for long position, check contract size
-        if pending_trade == 0:                
-
-            # close long position
-            ClosePosition(opened)
-            
-            # create log record
-            create_log("SWAP Fee Avoid Success")
-
-            # wait till next day continue the remaining trading
-            time.sleep(3605 - datetime.now().minute * 60 - datetime.now().second)
-
-            PlaceOrder("long")
-
-            # update the existing position
-            opened = mt5.positions_get()[0]._asdict()
-
-        else:
-            time.sleep(3605 - datetime.now().minute * 60 - datetime.now().second)
-    
-    else:
-        # set opened to None
         opened = None
 
-        time.sleep(3605 - datetime.now().minute * 60 - datetime.now().second)
+        # save the trade
+        pending = True
     
-    return HistoricalData(ticks=12).iloc[-2:,:].reset_index(), opened
+    return opened, pending
         
  
 # =========== Trading Information ==============

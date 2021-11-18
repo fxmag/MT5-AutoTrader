@@ -5,8 +5,8 @@
 File name: MT5Autotrader.py
 Author: WEI-TA KUAN
 Date created: 9/10/2021
-Date last modified: 16/11/2021
-Version: 3.1
+Date last modified: 18/11/2021
+Version: 4.0
 Python Version: 3.8.8
 Status: Developing
 """
