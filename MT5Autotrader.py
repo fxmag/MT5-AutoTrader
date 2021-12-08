@@ -17,7 +17,7 @@ from strategy import *
 mt5.initialize()
 
 # check everything up to date
-time.sleep(30)
+time.sleep(10)
 
 create_log("System Activated, Start Making Profit")
 

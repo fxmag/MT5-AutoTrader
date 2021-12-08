@@ -5,7 +5,7 @@
 File name: function.py
 Author: WEI-TA KUAN
 Date created: 9/10/2021
-Date last modified: 18/11/2021
+Date last modified: 20/11/2021
 Version: 4.0
 Python Version: 3.8.8
 Status: Developing
@@ -13,14 +13,16 @@ Status: Developing
 #--------------------------------#
 
 from datetime import datetime
-from dotenv import load_dotenv
+from json.decoder import JSONDecodeError
+from dotenv import load_dotenv, find_dotenv, set_key
 import MetaTrader5 as mt5
+import dotenv
 import pandas as pd
 import numpy as np
 import requests
 import time
 import pickle
-import joblib
+from json import dumps, loads
 import logging
 import os
 
@@ -36,7 +38,9 @@ def HistoricalData(symbol="EURUSD", period=mt5.TIMEFRAME_H1, ticks=70):
     data['time'] = pd.to_datetime(data['time'], unit='s')
     data['hour'] = [i.hour for i in data.time.tolist()]
     data['MovingAverage'] = data.iloc[:, 4].rolling(window=int(os.environ["MOVAVG"])).mean()
+    data['MovingAverage_2'] = data.iloc[:, 4].rolling(window=int(os.environ["MOVAVG_2"])).mean()
     data['RollingVol'] = data.iloc[:, 5].rolling(window=int(os.environ['ROLLVOL'])).mean()
+    data['Bias'] = (data['close'] - data['MovingAverage_2']) / data['MovingAverage_2']
     
     # calculate the changing rate
     for index, row in data.iterrows():
@@ -47,6 +51,7 @@ def HistoricalData(symbol="EURUSD", period=mt5.TIMEFRAME_H1, ticks=70):
             pass
     
     data = stohastic_oscillator(data, int(os.environ['K']), int(os.environ['D']))
+    data['KDR'] = data['K'] - data['D'] 
 
     return data
 
@@ -65,7 +70,7 @@ def OrderChecker(request):
 
     return True
 
-def PlaceOrder(types, comment, symbol='EURUSD', lot=1.0):
+def PlaceOrder(types, comment, symbol='EURUSD', lot=0.5):
     """This function help placing order in MT5"""
 
     if types == 'long':
@@ -88,10 +93,14 @@ def PlaceOrder(types, comment, symbol='EURUSD', lot=1.0):
         'magic':int(os.environ['BOT']),
         'comment':comment
         }
-    
-    if OrderChecker(request):
-        
-        create_log(f'Order Placed Successful - {types}')
+
+    # make sure there is only one position opened
+    if len(mt5.positions_get()) == 0:
+        if OrderChecker(request):
+            
+            create_log(f'Order Placed Successful - {types}')
+    else:
+        create_log(f'Exceed Order Limit', debug=True)
         
 def ClosePosition(opened):
     """This function is for closing all the existing position 
@@ -167,16 +176,24 @@ def create_log(msg, debug=False):
 
 
 # =========== Stop Loss ==============
-def StopLoss(opened):
+def StopLoss(opened, position):
     """This function check the stop loss condition had met or not"""
-    reference = HistoricalData(ticks=9)
+    reference = HistoricalData(ticks=50)
 
     # Condition met, close position and open another position
-    if reference.iloc[-2].change < float(os.environ['SL_THRESHOLD']) and opened['profit'] < 0:
-        
-        ClosePosition(opened)
-        
-        PlaceOrder('short')
+    if position == 0:
+        if reference.iloc[-2].Bias < float(os.environ['SL_THRESHOLD_2']) * -1 and opened['profit'] < -250:
+            
+            ClosePosition(opened)
+            
+            PlaceOrder('short', os.environ['STOPLOSS'])
+    else:
+        if reference.iloc[-2].KDR > int(os.environ["SL_THRESHOLD"]) and opened['profit'] < 0:
+
+            ClosePosition(opened)
+
+            return None
+
     
     # update existed position
     return mt5.positions_get()[0]._asdict()
@@ -189,3 +206,25 @@ def stohastic_oscillator(data, k, d):
     data['K'] = (data['close'] - data['lowest']) * 100 / (data['highest'] - data['lowest'])
     data['D'] = data['K'].rolling(d).mean()
     return data
+
+# =========== Store Environmental Variable =============
+def EnvValue(key, write_value=None, write=False):
+    env_file = find_dotenv()
+    load_dotenv(env_file)
+
+    if write:
+        if isinstance(write_value, dict):
+            os.environ[key] = dumps(write_value)
+        else:
+            os.environ[key] = write_value
+        set_key(env_file, key, os.environ[key])
+    
+    else:
+        try:
+            value = loads(os.environ[key])
+        except JSONDecodeError:
+            value = os.environ[key]
+        
+        return value
+
+    return write_value
