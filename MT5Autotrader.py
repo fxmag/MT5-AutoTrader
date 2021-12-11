@@ -38,6 +38,8 @@ while True:
 
         create_log(e, debug=True)
 
+        time.sleep(10)
+
         continue
 
 
