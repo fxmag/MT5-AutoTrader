@@ -5,7 +5,7 @@
 File name: function.py
 Author: WEI-TA KUAN
 Date created: 9/10/2021
-Date last modified: 20/11/2021
+Date last modified: 11/12/2021
 Version: 4.0
 Python Version: 3.8.8
 Status: Developing
@@ -182,7 +182,7 @@ def StopLoss(opened, position):
 
     # Condition met, close position and open another position
     if position == 0:
-        if reference.iloc[-2].Bias < float(os.environ['SL_THRESHOLD_2']) * -1 and opened['profit'] < -250:
+        if reference.iloc[-2].Bias < float(os.environ['SL_THRESHOLD_2']) * -1 and opened['K'] < int(os.environ['SL_THRESHOLD_3']):
             
             ClosePosition(opened)
             
