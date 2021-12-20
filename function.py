@@ -226,8 +226,3 @@ def EnvValue(key, write_value=None, write=False):
         return value
 
     return write_value
-
-# if __name__ == '__main__':
-#     price_dict = {'high':1.13192, 'low':1.13150, 'moving':'up'}
-#     with open('price_dict.pkl', 'wb') as f:
-#         pickle.dump(price_dict, f)
