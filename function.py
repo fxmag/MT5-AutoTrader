@@ -95,12 +95,10 @@ def PlaceOrder(types, comment, symbol='EURUSD', lot=0.5):
         }
 
     # make sure there is only one position opened
-    if len(mt5.positions_get()) == 0:
-        if OrderChecker(request):
-            
-            create_log(f'Order Placed Successful - {types}')
-    else:
-        create_log(f'Exceed Order Limit', debug=True)
+    if OrderChecker(request):
+        
+        create_log(f'Order Placed Successful - {types}')
+
         
 def ClosePosition(opened):
     """This function is for closing all the existing position 
@@ -228,3 +226,8 @@ def EnvValue(key, write_value=None, write=False):
         return value
 
     return write_value
+
+# if __name__ == '__main__':
+#     price_dict = {'high':1.13192, 'low':1.13150, 'moving':'up'}
+#     with open('price_dict.pkl', 'wb') as f:
+#         pickle.dump(price_dict, f)

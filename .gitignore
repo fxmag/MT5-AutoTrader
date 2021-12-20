@@ -3,8 +3,7 @@ main.py
 *.pkl
 *.log
 *.env
+HelperFunction.py
+Strategies.py
 strategy.py
-backtesting.py
-whitepaper.ipynb
 Archive
-*ipynb

@@ -14,7 +14,7 @@ Status: Developing
 
 from strategy import *
 
-mt5.initialize()
+mt5.initialize('C:/Program Files/ForexTime (FXTM) MT5/terminal64.exe')
 
 # check everything up to date
 time.sleep(10)
@@ -29,7 +29,7 @@ while True:
 
         strategy()
 
-        second = 3605 - datetime.now().minute * 60 - datetime.now().second
+        second = 3603 - datetime.now().minute * 60 - datetime.now().second
         
         time.sleep(second)
 
