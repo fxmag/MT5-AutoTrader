@@ -15,7 +15,7 @@ Automatic Forex Trading with MetaTrader 5
 This Repo includes helper functions, such as open and close lot, receiving historical data and how to avoid SWAP, which help investors can do quantitative trading on MetaTrader 5 with first sight intuition.
 
 ## Historical Backtesting
-Check [Backtesting performance and EDA]() on EURUSD
+Check [Backtesting performance and EDA](https://github.com/WeiTaKuan/MT5-AutoTrader/blob/main/EDA/Forex_Backtesting.ipynb) on EURUSD
 
 ## Performance (Demo)
 <a href="https://www.myfxbook.com/statements/9162536/statement.html"><img alt="widget" src="https://widgets.myfxbook.com/widgets/9162536/large.jpg"/></a>
