@@ -18,7 +18,7 @@ This Repo includes helper functions, such as open and close lot, receiving histo
 Check [Backtesting performance and EDA](https://github.com/WeiTaKuan/MT5-AutoTrader/blob/main/EDA/Forex_Backtesting.ipynb) on EURUSD
 
 ## Performance (Demo)
-<a href="https://www.myfxbook.com/statements/9162536/statement.html"><img alt="widget" src="https://widgets.myfxbook.com/widgets/9162536/large.jpg"/></a>
+<a href="https://www.myfxbook.com/members/max1758/zenbot/9166216"><img alt="widget" src="https://widgets.myfxbook.com/widgets/9166216/large.jpg"/></a>
 
 
 
