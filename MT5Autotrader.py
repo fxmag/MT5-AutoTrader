@@ -38,7 +38,11 @@ while True:
 
         create_log(e, debug=True)
 
+        mt5.shutdown()
+
         time.sleep(10)
+
+        mt5.initialize('C:/Program Files/ForexTime (FXTM) MT5/terminal64.exe')
 
         continue
 

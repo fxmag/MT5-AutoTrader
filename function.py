@@ -128,7 +128,7 @@ def ClosePosition(opened):
 
 # ========== SWAP =================
 
-def AvoidSwap(opened):
+def AvoidSwap(opened, pending):
     """Avoid SWAP Fee Expensed and don't trade at this time"""
 
     # only avoid swap for long position, check contract size
