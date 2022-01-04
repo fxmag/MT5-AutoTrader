@@ -12,7 +12,7 @@ Status: Developing
 """
 #--------------------------------#
 
-from datetime import datetime
+import datetime
 from json.decoder import JSONDecodeError
 from dotenv import load_dotenv, find_dotenv, set_key
 import MetaTrader5 as mt5
@@ -54,6 +54,18 @@ def HistoricalData(symbol="EURUSD", period=mt5.TIMEFRAME_H1, ticks=70):
     data['KDR'] = data['K'] - data['D'] 
 
     return data
+
+def UptoDate(historical_data, ticks):
+    """This function correct historical data feed error from the terminal"""
+
+    # record the local time
+    current = datetime.datetime.now().hour
+
+    while historical_data.time.iloc[-1].hour != current:
+        create_log("Data is not up to date !", debug=True)
+        historical_data = HistoricalData(ticks=ticks)
+    
+    return historical_data
 
 # ========== Order Helper Function =================
 def OrderChecker(request):
@@ -177,6 +189,8 @@ def create_log(msg, debug=False):
 def StopLoss(opened, position):
     """This function check the stop loss condition had met or not"""
     reference = HistoricalData(ticks=50)
+
+    reference = UptoDate(reference, 50)
 
     # Condition met, close position and open another position
     if position == 0:

@@ -29,7 +29,7 @@ while True:
 
         strategy()
 
-        second = 3603 - datetime.now().minute * 60 - datetime.now().second
+        second = 3603 - datetime.datetime.now().minute * 60 - datetime.datetime.now().second
         
         time.sleep(second)
 
