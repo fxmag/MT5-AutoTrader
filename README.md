@@ -26,6 +26,9 @@ Check [Backtesting performance and EDA](https://github.com/WeiTaKuan/MT5-AutoTra
 - Up to 1:2000 leverage
 
 [FXVM](https://fxvm.net/?aff=32188)
+- Low latency (Usually 1.9 ~ 3 ms tested by myself, not guarantee, might differ from the broker) 
+- Low packet loss rate 
+- Nearly 200 Mbps download speed and 300 Mbps upload speed (Speed might differ by the machine, not guarantee)
 
 
 ### License
