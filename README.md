@@ -20,7 +20,7 @@ Check [Backtesting performance and EDA](https://github.com/WeiTaKuan/MT5-AutoTra
 <a href="https://www.myfxbook.com/members/max1758/zenbot/9166216"><img alt="widget" src="https://widgets.myfxbook.com/widgets/9166216/large.jpg"/></a>
 
 ## Recommend Broker and VPS Service
-[FXTM](http://www.forextime.com/register/open-account?raf=fa060479)
+[FXTM](https://www.forextime.com/?form=JitA)
 - Up to 0 spread on main forex pairs (EURUSD)
 - Regulate by CySec, IFSC, FCA
 - Up to 1:2000 leverage
