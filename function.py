@@ -62,6 +62,9 @@ def UptoDate(historical_data, ticks):
     current = datetime.datetime.now().hour
 
     while historical_data.time.iloc[-1].hour != current:
+        if datetime.datetime.now().weekday() == 5:
+            create_log('Saturday Take a break')
+            exit()
         create_log("Data is not up to date !", debug=True)
         historical_data = HistoricalData(ticks=ticks)
     
