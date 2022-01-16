@@ -4,7 +4,6 @@
 	<img src="https://img.shields.io/github/license/WeiTaKuan/MT5-AutoTrader">
 </p>
 
-
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 The purpose of this repo is for education use, help trader who are interesting in Forex trading can get a first sight intuition on MetaTrader 5 platform.
@@ -24,6 +23,10 @@ Check [Backtesting performance and EDA](https://github.com/WeiTaKuan/MT5-AutoTra
 - Up to 0 spread on main forex pairs (EURUSD)
 - Regulate by CySec, IFSC, FCA
 - Up to 1:2000 leverage
+<a href="https://www.forextime.com/register/open-account?partner_id=4943926" target="_blank">
+  <img src="https://profile.fxtmpartners.com/static/interface/img/banners/uk/en/Trade%20major%20FX_UK/Trade%20major%20FX_UK_600x25.jpg">
+</a>
+
 
 [FXVM](https://fxvm.net/?aff=32188)
 - Low latency (Usually 1.9 ~ 3 ms tested by myself, not guarantee, might differ from the broker) 
